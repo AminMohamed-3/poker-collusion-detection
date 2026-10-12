@@ -1,0 +1,43 @@
+import os
+os.environ['POLARS_MAX_THREADS']='2'
+for k in ['OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS']:os.environ[k]='1'
+import sys,json,hashlib,time,argparse
+from pathlib import Path
+from datetime import datetime,timezone
+import numpy as np,polars as pl,lightgbm as lgb
+OUT=Path(__file__).resolve().parent;R=OUT.parent.parent;ROOT=R.parent;CACHE=R/'research/semi_supervised_features_20260913';PARENT=R/'experiments/semi_supervised_pair_yield_20260913'
+sys.stdout.reconfigure(encoding='utf-8')
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def write(p,j):
+ assert not p.exists(),str(p);p.write_text(json.dumps(j,indent=2)+'\n',encoding='utf-8')
+def matrix(x,cols):return np.nan_to_num(x.select(cols).to_numpy().astype(np.float32),nan=0,posinf=0,neginf=0)
+def initialize():
+ parent=json.loads((PARENT/'yield-result.json').read_text());assert parent['passes_yield_gate']
+ first=pl.read_parquet_schema(CACHE/'batch_000-hands.parquet');wide=[c for c in first if c not in ['pair_id','hand_id','table_id']];base=[c for c in wide if not c.startswith('v2_')];assert len(wide)==163 and len(base)==107
+ sources=[Path(__file__),PARENT/'plan.json',PARENT/'yield-result.json',PARENT/'frames-frozen.json',CACHE/'selected-pairs.parquet']+[PARENT/f'fold{k}/selected.parquet' for k in range(5)]
+ plan={'created_utc':datetime.now(timezone.utc).isoformat(),'scope':'First-salt evidence-teacher agreement/yield only. No held quality metrics or student fits. Known observed-list labels are used only inside each fit boundary.','parent_pair_yield':{'distinct_pairs':16,'pools':15},'sources':{str(p):sha(p) for p in sources},'feature_views':{'base107':base,'rawv2_163':wide},'teacher_parameters':{'objective':'cross_entropy','learning_rate':.05,'num_leaves':7,'max_depth':3,'min_data_in_leaf':40,'num_threads':2,'verbosity':-1,'seed':11,'deterministic':True,'force_col_wise':True},'boosting_rounds':150,'real_row_weight':'1/number of hands for that known positive query; each query totalweight1','agreement':{'minimum_top5_overlap':4,'top_mean_probability_at_least':.5,'tie_order':'score descending,hand_id ascending','soft_targets':'clip(mean of base andrawv2 teacherprobabilities,.05,.95), then multiply all by min(1,5/sum) perquery'},'pseudo_weight_caps':{'per_pair':.15,'per_pool':.30,'global_fraction_of_real_query_weight':.15},'yield_gate':{'minimum_distinct_pairs':15,'minimum_original_pools':10,'failure':'Stop this agreed-teacher recipe before student fits/quality evaluation; do not revise thresholds after outcome.','success':'Freeze matched original/repeated-real/pseudo students and remaining salt protocol before quality evaluation.'},'no_human_unknown_labels':True,'no_pseudo_negative_assumptions':True,'no_listed_hand_relabeling':True,'no_public_feedback_used':True,'same_model_for_mixed_families':'No true or predicted family feature in either hand teacher'}
+ write(OUT/'plan.json',plan);print(json.dumps({'plan_frozen':True,'teacher_fits':10,'quality_metrics':False}),flush=True)
+def fit():
+ plan=json.loads((OUT/'plan.json').read_text());assert all(sha(Path(p))==v for p,v in plan['sources'].items());parent=json.loads((PARENT/'plan.json').read_text());mapping=parent['salt']['mapping'];meta=pl.read_parquet(CACHE/'selected-pairs.parquet')
+ knownids=meta.filter(pl.col('label')==1).select('pair_id');all_selected=pl.concat([pl.read_parquet(PARENT/f'fold{k}/selected.parquet') for k in range(5)]).select('pair_id').unique();relevantids=pl.concat([knownids,all_selected]).unique()
+ raw=pl.scan_parquet(str(CACHE/'batch_*-hands.parquet')).join(relevantids.lazy(),on='pair_id',how='semi').collect().sort('pair_id','hand_id');known=raw.join(knownids,on='pair_id',how='semi')
+ assert known['pair_id'].n_unique()==162;assert not set(raw['table_id'])&set(parent['excluded_old_outer_pools']);reports=[];allaccepted=[]
+ for fold in range(5):
+  dest=OUT/f'fold{fold}';assert not dest.exists();dest.mkdir();held={p for p,k in mapping.items() if k==fold};train=known.filter(~pl.col('table_id').is_in(sorted(held))).sort('pair_id','hand_id');heldkeys=known.filter(pl.col('table_id').is_in(sorted(held)));candidates=pl.read_parquet(PARENT/f'fold{fold}/selected.parquet');unknown=raw.join(candidates.select('pair_id'),on='pair_id',how='semi').sort('pair_id','hand_id');assert not held&set(unknown['table_id']) and not set(train['hand_id'])&set(heldkeys['hand_id']) and not set(unknown['hand_id'])&set(heldkeys['hand_id'])
+  trainids=train.select('pair_id').unique();truth=pl.scan_csv(ROOT/'data/development_evidence.csv').select('pair_id','hand_id').join(trainids.lazy(),on='pair_id',how='semi').with_columns(pl.lit(1.).alias('listed')).collect();assert truth.height==truth.unique().height
+  train=train.join(truth,on=['pair_id','hand_id'],how='left').with_columns(pl.col('listed').fill_null(0.),(1/pl.len().over('pair_id')).alias('row_weight'));assert not set(truth['pair_id'])&set(heldkeys['pair_id']);y=train['listed'].to_numpy();w=train['row_weight'].to_numpy()
+  probs=[];t=time.perf_counter();model_receipts=[]
+  for name,features in plan['feature_views'].items():
+   X=matrix(train,features);Q=matrix(unknown,features);model=lgb.train(plan['teacher_parameters'],lgb.Dataset(X,label=y,weight=w,feature_name=features),num_boost_round=plan['boosting_rounds']);q=model.predict(Q);mf=dest/f'{name}.txt';model.save_model(str(mf));reloaded=lgb.Booster(model_file=str(mf));assert np.array_equal(q,reloaded.predict(Q));probs.append(q);model_receipts.append({'name':name,'features':len(features),'sha256':sha(mf),'exact_reload':True})
+  z=unknown.select('pair_id','hand_id','table_id').with_columns(pl.Series('p_base',probs[0]),pl.Series('p_v2',probs[1]),pl.Series('p_mean',(probs[0]+probs[1])/2));rows=[];targets=[]
+  for group in z.partition_by('pair_id',maintain_order=True):
+   a=group.sort(['p_base','hand_id'],descending=[True,False]).head(5);b=group.sort(['p_v2','hand_id'],descending=[True,False]).head(5);overlap=len(set(a['hand_id'])&set(b['hand_id']));mx=float(group['p_mean'].max());accept=overlap>=4 and mx>=.5;pid=group['pair_id'][0];pool=group['table_id'][0];rows.append({'pair_id':pid,'table_id':pool,'top5_overlap':overlap,'top_mean_probability':mx,'accepted':accept})
+   if accept:
+    soft=np.clip(group['p_mean'].to_numpy(),.05,.95);soft*=min(1.,5/soft.sum());assert 0<=soft.min()<=soft.max()<=1 and soft.sum()<=5+1e-10;targets.append(group.with_columns(pl.Series('soft_listed_target',soft),pl.lit(.15/group.height).alias('pseudo_row_weight')))
+  diag=pl.DataFrame(rows);diag.write_parquet(dest/'agreement.parquet');z.write_parquet(dest/'teacher-probabilities.parquet');accepted=diag.filter(pl.col('accepted'));allaccepted.append(accepted.with_columns(pl.lit(fold).alias('fold')))
+  if targets:
+   target=pl.concat(targets);pairs=target['pair_id'].n_unique();factor=min(1.,.15*train['pair_id'].n_unique()/(pairs*.15));target=target.with_columns(pl.col('pseudo_row_weight')*factor);assert float(target.group_by('table_id').agg(pl.col('pseudo_row_weight').sum())['pseudo_row_weight'].max())<=.30+1e-9;target.write_parquet(dest/'soft-targets.parquet')
+  rep={'fold':fold,'train_known_positive_queries':train['pair_id'].n_unique(),'training_hand_rows':train.height,'candidate_pairs':candidates.height,'agreement_ge4_pairs':diag.filter(pl.col('top5_overlap')>=4).height,'top_mean_probability_ge05_pairs':diag.filter(pl.col('top_mean_probability')>=.5).height,'accepted_pairs':accepted.height,'accepted_pools':accepted['table_id'].n_unique(),'models':model_receipts,'unknown_probabilities_sha256':sha(dest/'teacher-probabilities.parquet'),'agreement_sha256':sha(dest/'agreement.parquet'),'seconds':time.perf_counter()-t,'held_pool_hand_overlap':0,'no_held_quality_metrics':True};write(dest/'fit.json',rep);reports.append(rep);print(json.dumps(rep),flush=True)
+ allx=pl.concat(allaccepted);distinct=allx.unique('pair_id');passed=distinct.height>=15 and distinct['table_id'].n_unique()>=10;allx.write_parquet(OUT/'accepted-all-folds.parquet');result={'created_utc':datetime.now(timezone.utc).isoformat(),'status':'YIELD_PASS' if passed else 'INSUFFICIENT_AGREEMENT_YIELD_STOP','teacher_fits':10,'distinct_accepted_pairs':distinct.height,'distinct_accepted_pools':distinct['table_id'].n_unique(),'accepted_appearances':allx.height,'passes_gate':passed,'folds':reports,'quality_evaluations':0,'student_fits':0,'next_action':plan['yield_gate']['success' if passed else 'failure']};write(OUT/'yield-result.json',result);print(json.dumps(result),flush=True)
+if __name__=='__main__':
+ ap=argparse.ArgumentParser();ap.add_argument('mode',choices=['init','fit']);a=ap.parse_args();{'init':initialize,'fit':fit}[a.mode]()

@@ -1,0 +1,13 @@
+import os,sys,site,json,hashlib
+from pathlib import Path
+os.environ.update(OMP_NUM_THREADS='2',MKL_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',POLARS_MAX_THREADS='2')
+ROOT=Path(r'C:\Data\Projects\Money Making');site.addsitedir(str(ROOT/'work/poker/.venv/Lib/site-packages'))
+import numpy as np,polars as pl
+from lightgbm import LGBMClassifier
+O=ROOT/'work/poker/goal_top5_20260919/foundation_pair/full_fast';C=ROOT/'work/poker/Claude Version';CUR=ROOT/'work/poker/goal_top5_20260919/outputs/submission_sp277_ci276_on_step272.csv';SEED=35935
+def sha(p):
+ h=hashlib.sha256();f=open(p,'rb')
+ for b in iter(lambda:f.read(1<<20),b''):h.update(b)
+ f.close();return h.hexdigest()
+lab=pl.read_csv(ROOT/'work/poker/data/development_labels.csv');tr=pl.read_parquet(C/'experiments/crossphase_20260911/lab_on_dev.parquet').join(lab.select('pair_id','label','behavior_family'),on='pair_id',validate='1:1');fam={'none':0,'directed_transfer':1,'soft_play':2,'coordinated_isolation':3};y=np.array([fam[v] if z==1 else 0 for z,v in zip(tr['label'],tr['behavior_family'])],dtype=np.int8);feats=[c for c,dt in tr.schema.items() if c not in {'pair_id','table_id','label','behavior_family'} and dt.is_numeric()];X=tr.select(feats).to_numpy().astype('float32');X[~np.isfinite(X)]=np.nan
+sm=LGBMClassifier(objective='multiclass',num_class=4,n_estimators=300,learning_rate=.03,num_leaves=15,min_child_samples=25,reg_lambda=10,colsample_bytree=.8,random_state=SEED,n_jobs=2,verbosity=-1,deterministic=True,force_col_wise=True);sm.fit(X,y);imp=sm.booster_.feature_importance(importance_type='gain');ix=np.array(sorted(range(len(feats)),key=lambda j:(-float(imp[j]),feats[j]))[:128]);names=[feats[j] for j in ix];cur=pl.read_csv(CUR,columns=['pair_id']);ev=pl.read_parquet(C/'experiments/crossphase_20260911/eval_on_eval.parquet').join(cur.with_row_index('_order'),on='pair_id',validate='1:1').sort('_order');XE=ev.select(names).to_numpy().astype('float32');XE[~np.isfinite(XE)]=np.nan;np.savez_compressed(O/'full_context.npz',X_train=X[:,ix],y_train=y,X_eval=XE,pair_id=np.array(ev['pair_id'].to_list(),dtype='U'),feature_name=np.array(names,dtype='U'));meta={'seed':SEED,'train_rows':len(y),'class_counts':{str(k):int((y==k).sum()) for k in range(4)},'feature_names':names,'train_source_sha256':sha(C/'experiments/crossphase_20260911/lab_on_dev.parquet'),'eval_source_sha256':sha(C/'experiments/crossphase_20260911/eval_on_eval.parquet'),'current_sha256':sha(CUR),'train_array_sha256':hashlib.sha256(X[:,ix].tobytes()).hexdigest(),'eval_keys_sha256':hashlib.sha256('\n'.join(ev['pair_id']).encode()).hexdigest()};(O/'context_receipt.json').write_text(json.dumps(meta,indent=2))

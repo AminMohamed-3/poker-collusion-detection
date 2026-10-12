@@ -1,0 +1,23 @@
+# environments and caches
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# competition data, models and outputs stay local
+data/
+outputs/
+outputs_v*/
+outputs_novelty/
+*.parquet
+*.csv
+*.zip
+*.joblib
+*.npy
+*.npz
+*.pt
+*.safetensors
+
+# secrets
+.env
+kaggle.json
