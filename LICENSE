@@ -1,0 +1,184 @@
+POKER COLLUSION DETECTION RESEARCH LICENSE
+Version 1.0, 12 October 2026
+
+Copyright (c) 2026 Amin Mohamed. All rights reserved, except as expressly
+granted below.
+
+By using, copying, modifying or distributing the Work, You accept this
+License. If You do not accept it, You have no right to use the Work.
+
+
+1. DEFINITIONS
+
+1.1 "Licensor" means the copyright holder named above.
+
+1.2 "Work" means the source code, scripts, documentation and all other
+    material in this repository, in whole or in part, in any form.
+
+1.3 "Derivative" means anything based on or derived from the Work, including
+    (a) modified, translated, ported or adapted versions of the Work;
+    (b) software that incorporates any part of the Work; and
+    (c) any model, model weights, feature set, rule set, dataset, score or
+        other artefact trained, fitted, tuned, generated or validated using
+        the Work.
+
+1.4 "You" means the individual or legal entity exercising rights under this
+    License, together with any entity that controls, is controlled by, or is
+    under common control with that entity.
+
+1.5 "Research Purposes" means study, experimentation, teaching, and the
+    evaluation, reproduction and publication of methods and results, carried
+    out for the advancement of knowledge, which is neither a Commercial Use
+    nor a Gambling Use.
+
+1.6 "Commercial Use" means any use that is primarily intended for, or
+    directed toward, commercial advantage or monetary compensation. It
+    includes, without limitation:
+    (a) selling, licensing, renting or otherwise charging for the Work or a
+        Derivative;
+    (b) using the Work or a Derivative in, or to build, test or operate, a
+        product or service that is offered for a fee or that generates
+        revenue, directly or indirectly;
+    (c) using the Work or a Derivative in the business operations of a
+        for-profit entity; and
+    (d) providing paid consulting, support or other services that rely on
+        the Work or a Derivative.
+
+1.7 "Gambling Use" means any use of the Work or a Derivative in, for, or in
+    connection with real-world gambling, meaning any game, platform, venue
+    or activity in which money or anything of monetary value is staked,
+    wagered or won, whether online or offline and whether or not lawful in
+    the relevant jurisdiction. It includes, without limitation, the design,
+    development, training, testing, deployment, operation, marketing or
+    support of:
+    (a) any poker room, casino, sportsbook, betting exchange, lottery,
+        skin-betting or similar product or service;
+    (b) any tool that assists a participant in such an activity, including
+        bots, real-time assistance, solvers or advisers used for play,
+        collusion or chip-transfer tools, and tools designed to evade
+        detection; and
+    (c) any security, integrity, fraud-detection, anti-collusion, risk or
+        player-monitoring system used by or on behalf of an operator,
+        regulator, supplier or participant of such an activity.
+    Research Purposes carried out solely on synthetic, simulated or publicly
+    released research data, with no deployment against real-world gambling
+    activity, are not a Gambling Use.
+
+
+2. GRANT OF LICENSE
+
+Subject to Your continuing compliance with this License, the Licensor grants
+You a worldwide, royalty-free, non-exclusive, non-transferable,
+non-sublicensable, revocable license to use, reproduce, modify and
+distribute the Work and Derivatives, solely for Research Purposes.
+
+
+3. RESTRICTIONS
+
+You must not, and must not permit or assist any other person to:
+
+3.1 make any Commercial Use of the Work or of any Derivative;
+
+3.2 make any Gambling Use of the Work or of any Derivative;
+
+3.3 use the Work or any Derivative to develop, improve, train, test or
+    validate any solution, product, service or system related to real-world
+    gambling, in any capacity and for any party;
+
+3.4 distribute the Work or any Derivative under terms other than this
+    License, or impose terms that remove or weaken any restriction in it; or
+
+3.5 remove, alter or obscure any copyright, license or attribution notice
+    in the Work.
+
+These restrictions apply to every Derivative, including trained models and
+their outputs, regardless of how far removed it is from the original Work.
+
+
+4. CONDITIONS OF DISTRIBUTION
+
+If You distribute the Work or a Derivative, You must:
+
+4.1 include a complete copy of this License and of the copyright notice
+    above;
+
+4.2 license the Work and the Derivative only under this License;
+
+4.3 state prominently that You changed the Work, where You did, and keep
+    the notice that the material is for research purposes only; and
+
+4.4 give credit to the Licensor in any publication, report or presentation
+    that relies on the Work, in a manner reasonable for the medium.
+
+
+5. THIRD-PARTY MATERIAL
+
+5.1 The Work does not include the competition dataset it was developed on.
+    Any use of that dataset is governed by the rules of the competition
+    host, and nothing in this License grants any right to it.
+
+5.2 Third-party software used by the Work remains under its own license
+    terms.
+
+
+6. NO OTHER RIGHTS
+
+6.1 No rights are granted by implication, estoppel or otherwise. All rights
+    not expressly granted are reserved by the Licensor. This License grants
+    no right to use the Licensor's name or marks, except for the attribution
+    required by clause 4.4.
+
+6.2 Any use outside this License, including any Commercial Use, requires the
+    prior written permission of the Licensor. The Licensor will not grant
+    permission for a Gambling Use.
+
+
+7. TERMINATION
+
+7.1 This License and all rights granted under it terminate automatically,
+    without notice, if You breach any of its terms.
+
+7.2 On termination You must immediately stop all use and distribution of
+    the Work and of every Derivative, and destroy all copies in Your
+    possession or control.
+
+7.3 Clauses 1, 3, 5, 6, 7, 8, 9 and 10 survive termination.
+
+
+8. DISCLAIMER OF WARRANTY
+
+THE WORK IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OR
+CONDITION OF ANY KIND, EXPRESS, IMPLIED OR STATUTORY, INCLUDING WITHOUT
+LIMITATION ANY WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, ACCURACY, TITLE OR NON-INFRINGEMENT. THE WORK IS EXPERIMENTAL
+RESEARCH MATERIAL. IT IS NOT A FRAUD-DETECTION, COMPLIANCE OR DECISION
+SYSTEM, AND ITS OUTPUTS MUST NOT BE USED TO ACCUSE, SANCTION OR OTHERWISE
+ACT AGAINST ANY PERSON.
+
+
+9. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL THE
+LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR
+PUNITIVE, AND WHETHER IN CONTRACT, TORT (INCLUDING NEGLIGENCE) OR
+OTHERWISE, ARISING FROM OR IN CONNECTION WITH THE WORK, ANY DERIVATIVE, OR
+THE USE OF OR OTHER DEALINGS IN EITHER, EVEN IF ADVISED OF THE POSSIBILITY
+OF SUCH DAMAGES.
+
+
+10. GENERAL
+
+10.1 If any provision of this License is held unenforceable, it will be
+     enforced to the maximum extent permitted and the remaining provisions
+     stay in full force. If clause 3.1, 3.2 or 3.3 is held unenforceable
+     against You, the license granted in clause 2 terminates as to You.
+
+10.2 A failure or delay by the Licensor in enforcing any term is not a
+     waiver of it.
+
+10.3 This License is the entire agreement between You and the Licensor
+     concerning the Work. It may be changed only in writing signed by the
+     Licensor.
+
+10.4 Nothing in this License is an endorsement or promotion of gambling.

@@ -6,6 +6,10 @@ Code for the Kaggle competition
 
 **Result: 16th of 371, private score 0.92056 (public 0.91411).**
 
+> **Research purposes only.** This repository is published for research on collusion detection. It
+> may not be used commercially, and it may not be used to develop any solution related to real-world
+> gambling, in any capacity. See [LICENSE](LICENSE).
+
 This is a code-only export of the working tree. Competition data, feature caches, models, submission
 files, result JSON, run logs and the agent coordination notes are not included, so nothing here runs
 as is. It shows the structure of the work and the code behind it.
@@ -69,3 +73,16 @@ Score = `0.7 * PairAP + 0.2 * EvidenceMAP@5 + 0.1 * BehaviourMAP`.
   (Python 3.12, polars, LightGBM, scikit-learn). The GPU studies used extra packages installed on
   rented machines.
 - The competition data may only be used under the competition rules and must be downloaded from Kaggle.
+
+## License
+
+Released under the [Poker Collusion Detection Research License 1.0](LICENSE), a custom
+source-available license. In short:
+
+- research use only, with attribution;
+- no commercial use;
+- no use in, or to develop, anything related to real-world gambling, including operator-side
+  detection systems;
+- derivatives, including trained models, carry the same terms.
+
+The license text governs. This is not an open-source license.
